@@ -2,22 +2,23 @@ import nodemailer from 'nodemailer';
 
 console.log(' Email service initializing...');
 
-// Create transporter with real Gmail credentials
+// Create transporter with Brevo SMTP configuration
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+    pass: process.env.BREVO_SMTP_KEY
   }
 });
 // Test transporter connection
 transporter.verify((error) => {
   if (error) {
     console.error(' Email connection failed:', error.message);
-    console.log(' Please check your EMAIL_USER and EMAIL_PASSWORD in .env file');
-    console.log(' Please make sure you are using App Password, not regular password');
+    console.log(' Please check your EMAIL_USER and BREVO_SMTP_KEY in .env file');
   } else {
-    console.log(' Email server connected successfully');
+    console.log(' Email server connected successfully (Brevo SMTP)');
   }
 });
 

@@ -69,7 +69,7 @@ const sanitizeInput = (req, res, next) => {
 
 // Validate environment variables
 const validateConfig = () => {
-    const requiredEnvVars = ['EMAIL_USER', 'EMAIL_PASSWORD'];
+    const requiredEnvVars = ['BREVO_SMTP_KEY', 'EMAIL_USER'];
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
 
     if (missing.length > 0) {
@@ -77,20 +77,20 @@ const validateConfig = () => {
     }
 };
 
-// Create transporter with enhanced configuration
+// Create transporter with Brevo SMTP configuration
 const createTransporter = () => {
     validateConfig();
 
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // true for 465, false for other ports
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        secure: false, // true for 465, false for 587
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
+            pass: process.env.BREVO_SMTP_KEY
         },
         pool: true, // Use connection pooling
-        maxConnections: 5,// Limit number of connections
+        maxConnections: 5, // Limit number of connections
         maxMessages: 100,
         rateDelta: 1000,
         rateLimit: 5 // 5 emails per second
