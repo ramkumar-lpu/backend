@@ -141,6 +141,12 @@ mongoose
 
 // ================== MIDDLEWARE ==================
 
+// Normalize duplicate slashes (e.g., //api/designs) before routing
+app.use((req, _res, next) => {
+  req.url = req.url.replace(/\/{2,}/g, '/');
+  next();
+});
+
 // Increase payload size
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
