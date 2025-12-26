@@ -45,9 +45,14 @@ export const sendEmail = async (to, subject, html, text = '', options = {}) => {
     });
 
     if (!res.ok) {
-      const errText = await res.text();
-      console.error(' Brevo API send failed:', errText);
-      return { success: false, error: `Brevo API error: ${res.status}` };
+      let errBody;
+      try {
+        errBody = await res.json();
+      } catch (e) {
+        errBody = await res.text();
+      }
+      console.error(' Brevo API send failed:', errBody);
+      return { success: false, error: `Brevo API error: ${res.status}` , status: res.status, body: errBody };
     }
 
     const data = await res.json();

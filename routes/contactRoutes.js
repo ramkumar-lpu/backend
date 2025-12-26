@@ -399,7 +399,8 @@ router.get('/test', async (req, res) => {
             ? 'Unauthorized: Set BREVO_API_KEY in environment (SMTP key will not work for API).'
             : result.error || 'Email send failed';
 
-        return res.status(502).json({ success: false, message, to });
+        // Return 200 with detailed error body to avoid PowerShell throwing on non-2xx
+        return res.status(200).json({ success: false, message, to, status: result.status, body: result.body });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
     }
