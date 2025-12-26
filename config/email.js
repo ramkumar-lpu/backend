@@ -11,9 +11,15 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.BREVO_SMTP_KEY
   },
+  connectionTimeout: 60000, // 60 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 60000,
   tls: {
-    rejectUnauthorized: true
-  }
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
+  },
+  debug: true,
+  logger: true
 });
 // Test transporter connection
 transporter.verify((error) => {

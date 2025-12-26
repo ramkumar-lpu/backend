@@ -84,19 +84,25 @@ const createTransporter = () => {
     return nodemailer.createTransport({
         host: 'smtp-relay.brevo.com',
         port: 465,
-        secure: true, // true for 465 SSL
+        secure: true,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.BREVO_SMTP_KEY
         },
+        connectionTimeout: 60000, // 60 seconds
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
         tls: {
-            rejectUnauthorized: true
+            rejectUnauthorized: false,
+            minVersion: 'TLSv1.2'
         },
-        pool: true, // Use connection pooling
-        maxConnections: 5, // Limit number of connections
+        pool: true,
+        maxConnections: 3,
         maxMessages: 100,
         rateDelta: 1000,
-        rateLimit: 5 // 5 emails per second
+        rateLimit: 3,
+        debug: true,
+        logger: true
     });
 };
 
