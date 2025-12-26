@@ -120,6 +120,23 @@ const validateLoginInput = (req, res, next) => {
   next();
 };
 
+// ========== AUTH API INFO ==========
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Auth API is working',
+    endpoints: {
+      register: 'POST /api/auth/register',
+      login: 'POST /api/auth/login',
+      logout: 'POST /api/auth/logout',
+      user: 'GET /api/auth/user',
+      googleAuth: 'GET /api/auth/google',
+      resetPassword: 'POST /api/auth/forgot-password',
+      verifyOTP: 'POST /api/auth/verify-otp'
+    }
+  });
+});
+
 // ========== GOOGLE OAUTH ROUTES ==========
 router.get('/google',
   passport.authenticate('google', { 
