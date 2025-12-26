@@ -31,6 +31,18 @@ const authMiddleware = (req, res, next) => {
   next();
 };
 
+// Get profile API status
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Profile API is working',
+    endpoints: {
+      uploadProfilePicture: 'POST /api/profile/upload-profile-picture',
+      getProfile: 'GET /api/profile/me'
+    }
+  });
+});
+
 // Upload profile picture (multipart "file" or JSON { base64Image })
 router.post(
   '/upload-profile-picture',

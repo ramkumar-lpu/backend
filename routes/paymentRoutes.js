@@ -10,6 +10,18 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
+// Get payment API status
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Razorpay Payment API is working',
+        endpoints: {
+            createOrder: 'POST /api/payment/create-order',
+            verifyPayment: 'POST /api/payment/verify'
+        }
+    });
+});
+
 // Create an order
 router.post('/create-order', async (req, res) => {
     try {

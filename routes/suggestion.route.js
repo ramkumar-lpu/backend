@@ -8,6 +8,17 @@ export const suggestionRouter = Router();
 // Ensure your .env has: HF_TOKEN=hf_your_actual_token_here
 const hf = new HfInference(process.env.HF_TOKEN);
 
+// Get shoe suggestion API status
+suggestionRouter.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'AI Shoe Generation API is working',
+    endpoints: {
+      generateShoe: 'POST /api/shoe/generate-shoe'
+    }
+  });
+});
+
 suggestionRouter.post('/generate-shoe', async (req, res) => {
   const { prompt } = req.body;
 
