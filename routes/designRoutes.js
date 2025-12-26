@@ -12,6 +12,17 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Get all designs
+router.get('/', async (req, res) => {
+  try {
+    const designs = await Design.find().populate('user', 'firstName lastName email').limit(50);
+    res.json({ success: true, count: designs.length, designs });
+  } catch (error) {
+    console.error('Error fetching designs:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch designs' });
+  }
+});
+
 // Upload base64 to Cloudinary
 router.post('/upload-base64', async (req, res) => {
   try {

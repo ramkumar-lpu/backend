@@ -5,6 +5,11 @@ import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
+// Get contact route status
+router.get('/', async (req, res) => {
+  res.json({ success: true, message: 'Contact API is working', endpoint: '/api/contact/send' });
+});
+
 // Rate limiting to prevent abuse
 const contactLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes

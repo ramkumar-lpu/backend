@@ -3,6 +3,17 @@ import Order from '../models/Order.js';
 
 const router = express.Router();
 
+// Get all orders
+router.get('/', async (req, res) => {
+  try {
+    const orders = await Order.find().populate('user', 'firstName lastName email').limit(100);
+    res.json({ success: true, count: orders.length, orders });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch orders' });
+  }
+});
+
 // Create a new order
 router.post('/', async (req, res) => {
     try {
