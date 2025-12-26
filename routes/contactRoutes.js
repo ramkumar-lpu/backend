@@ -1,5 +1,5 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
+import { sendEmail as sendEmailAPI } from '../config/email.js';
 import { body, validationResult } from 'express-validator'; 
 import rateLimit from 'express-rate-limit';
 
@@ -67,68 +67,14 @@ const sanitizeInput = (req, res, next) => {
     next();
 };
 
-// Validate environment variables
-const validateConfig = () => {
-    const requiredEnvVars = ['BREVO_SMTP_KEY', 'EMAIL_USER'];
+// Brevo API is used; validate env variables
+const validateEmailConfig = () => {
+    const requiredEnvVars = ['EMAIL_USER'];
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
-
     if (missing.length > 0) {
         throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }
 };
-
-// Create transporter with Brevo SMTP configuration
-const createTransporter = () => {
-    validateConfig();
-
-    return nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.BREVO_SMTP_KEY
-        },
-        connectionTimeout: 60000, // 60 seconds
-        greetingTimeout: 30000,
-        socketTimeout: 60000,
-        tls: {
-            rejectUnauthorized: false,
-            minVersion: 'TLSv1.2'
-        },
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 100,
-        rateDelta: 1000,
-        rateLimit: 3,
-        debug: true,
-        logger: true
-    });
-};
-
-// Verify transporter connection
-const verifyTransporter = async () => {
-    const transporter = createTransporter();
-    try {
-        await transporter.verify();
-        return transporter;
-    } catch (error) {
-        console.error('Failed to create email transporter:', error);
-        throw error;
-    }
-};
-
-// Reusable transporter (created once)
-let transporter;
-
-// Initialize transporter on server start
-(async () => {
-    try {
-        transporter = await verifyTransporter();
-    } catch (error) {
-        console.error('Failed to initialize email transporter');
-    }
-})();
 
 // Helper function to sanitize HTML
 const sanitizeHTML = (input) => {
@@ -217,12 +163,8 @@ router.post('/send', contactLimiter, sanitizeInput, contactValidationRules, asyn
         const sanitizedMessage = sanitizeHTML(message);
         const formattedContactType = formatContactType(contactType);
 
-        // Check if transporter is available
-        if (!transporter) {
-            transporter = await verifyTransporter().catch(() => {
-                throw new Error('Email service temporarily unavailable');
-            });
-        }
+        // Ensure config is valid
+        validateEmailConfig();
 
         // Create the HTML template without the info reference in the footer
         const htmlTemplate = `
@@ -340,17 +282,19 @@ Generated at: ${formatDateISO()}
             }
         };
 
-        // Send email with timeout
-        const emailPromise = transporter.sendMail(mailOptions);
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Email sending timeout')), 30000);
-        });
+        // Send email via Brevo API
+        const info = await sendEmailAPI(
+            mailOptions.to,
+            mailOptions.subject,
+            mailOptions.html,
+            mailOptions.text,
+            { replyTo: mailOptions.replyTo, senderName: mailOptions.from?.name }
+        );
 
-        const info = await Promise.race([emailPromise, timeoutPromise]);
-
-        // Log successful send
-        console.log('Email sent successfully:', {
-            messageId: info.messageId,
+        // Log result
+        console.log('Email send result:', {
+            success: info.success,
+            info: info.info,
             timestamp: formatDateISO(),
             to: mailOptions.to,
             subject: mailOptions.subject,
@@ -359,12 +303,16 @@ Generated at: ${formatDateISO()}
         });
 
         // Send success response
-        res.json({
-            success: true,
-            message: 'Email sent successfully',
-            messageId: info.messageId,
-            timestamp: formatDateISO()
-        });
+        if (info.success) {
+            res.json({
+                success: true,
+                message: 'Email sent successfully',
+                info: info.info,
+                timestamp: formatDateISO()
+            });
+        } else {
+            throw new Error(info.error || 'Email send failed');
+        }
 
     } catch (error) {
         console.error('Error sending email:', {
@@ -402,11 +350,11 @@ Generated at: ${formatDateISO()}
 // Health check endpoint
 router.get('/health', async (req, res) => {
     try {
-        if (transporter) {
-            await transporter.verify();
+        const hasApiKey = !!(process.env.BREVO_API_KEY || process.env.BREVO_SMTP_KEY);
+        if (hasApiKey && process.env.EMAIL_USER) {
             res.json({
                 status: 'healthy',
-                service: 'email',
+                service: 'email-api',
                 timestamp: formatDateISO(),
                 serverTime: formatTimestamp(),
                 uptime: process.uptime()
@@ -414,7 +362,7 @@ router.get('/health', async (req, res) => {
         } else {
             res.status(503).json({
                 status: 'unavailable',
-                service: 'email',
+                service: 'email-api',
                 timestamp: formatDateISO(),
                 serverTime: formatTimestamp()
             });
@@ -422,7 +370,7 @@ router.get('/health', async (req, res) => {
     } catch (error) {
         res.status(503).json({
             status: 'unhealthy',
-            service: 'email',
+            service: 'email-api',
             error: error.message,
             timestamp: formatDateISO(),
             serverTime: formatTimestamp()
