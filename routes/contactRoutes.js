@@ -378,4 +378,31 @@ router.get('/health', async (req, res) => {
     }
 });
 
+// Test email endpoint (uses Brevo API over HTTPS)
+router.get('/test', async (req, res) => {
+    try {
+        validateEmailConfig();
+        const to = req.query.to || process.env.EMAIL_USER;
+        const result = await sendEmailAPI(
+            to,
+            'ShoeCreatify Email Test',
+            '<p>This is a test email from ShoeCreatify via Brevo API.</p>',
+            'This is a test email from ShoeCreatify via Brevo API.'
+        );
+
+        if (result.success) {
+            return res.json({ success: true, info: result.info, to });
+        }
+
+        // Common cause: wrong API key (SMTP key vs API key)
+        const message = result.error?.includes('401')
+            ? 'Unauthorized: Set BREVO_API_KEY in environment (SMTP key will not work for API).'
+            : result.error || 'Email send failed';
+
+        return res.status(502).json({ success: false, message, to });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;
